@@ -2,8 +2,10 @@
 import { promises as fs } from "node:fs";
 import { Command } from "commander";
 import { analyzeAliases, filterHistoryByDays } from "./analyzer.js";
+import { analyzeConflicts, formatConflictReport } from "./conflicts.js";
 import { exportAliases } from "./exporter.js";
 import { formatReport, toJsonReport } from "./formatter.js";
+import { analyzeHealth, formatHealthReport } from "./health.js";
 import {
   detectShell,
   parseHistoryContents,
@@ -23,6 +25,8 @@ interface CliOptions {
   shell?: ShellType;
   suggest?: boolean;
   export?: ExportShellType;
+  conflicts?: boolean;
+  healthScore?: boolean;
 }
 
 const program = new Command();
@@ -37,6 +41,8 @@ program
   .option("--json", "JSON output")
   .option("--shell <sh>", "Force shell type: zsh|bash")
   .option("--suggest", "Analyze history and suggest new aliases")
+  .option("--conflicts", "Detect alias conflicts and shadowing")
+  .option("--health-score", "Calculate overall alias health")
   .option("--export <shell>", "Export aliases as bash|zsh|fish syntax")
   .action(run);
 
@@ -45,6 +51,9 @@ program.parseAsync(process.argv);
 async function run(options: CliOptions): Promise<void> {
   if (options.suggest && options.export) {
     throw new Error("--suggest and --export cannot be used together");
+  }
+  if ([options.suggest, options.export !== undefined, options.conflicts, options.healthScore].filter(Boolean).length > 1) {
+    throw new Error("--suggest, --export, --conflicts, and --health-score are mutually exclusive");
   }
 
   const shell = detectShell(options.shell, options.rc, options.history);
@@ -57,6 +66,14 @@ async function run(options: CliOptions): Promise<void> {
     const aliases = parseRcContents(rcContents);
     const output = exportAliases(aliases, options.export);
     process.stdout.write(output.length > 0 ? `${output}\n` : "");
+    return;
+  }
+
+  if (options.conflicts) {
+    const aliases = parseRcContents(await readTextFile(rcPath));
+    const report = await analyzeConflicts(aliases);
+
+    process.stdout.write(`${options.json ? JSON.stringify(report, null, 2) : formatConflictReport(report)}\n`);
     return;
   }
 
@@ -75,6 +92,15 @@ async function run(options: CliOptions): Promise<void> {
   }
 
   const [rcContents, historyContents] = await Promise.all([readTextFile(rcPath), readTextFile(historyPath)]);
+
+  if (options.healthScore) {
+    const aliases = parseRcContents(rcContents);
+    const historyEntries = parseHistoryContents(historyContents);
+    const report = await analyzeHealth(aliases, historyEntries);
+
+    process.stdout.write(`${options.json ? JSON.stringify(report, null, 2) : formatHealthReport(report)}\n`);
+    return;
+  }
 
   if (!options.json) {
     process.stdout.write(`Reading ${rcPath} and ${historyPath}...\n\n`);

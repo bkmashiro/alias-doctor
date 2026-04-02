@@ -9,6 +9,8 @@
 - Parses both zsh extended history and plain bash history formats
 - Finds ghost aliases by checking how often alias expansions appear in recent history
 - Suggests new aliases for repeated commands that are not already aliased
+- Detects aliases that shadow system commands, overwrite each other, or duplicate targets
+- Calculates an overall alias health score
 - Supports human-readable output and `--json`
 
 ## Install
@@ -39,11 +41,17 @@ Options:
 - `--min-uses <n>` Min uses to suggest alias (default: `5`)
 - `--json` JSON output
 - `--shell <sh>` Force shell type: `zsh|bash`
+- `--suggest` Analyze history and suggest new aliases
+- `--conflicts` Detect alias conflicts and shadowing
+- `--health-score` Calculate overall alias health
+- `--export <shell>` Export aliases as `bash|zsh|fish` syntax
 
 Example:
 
 ```bash
 alias-doctor --days 30 --min-uses 10
+alias-doctor --conflicts
+alias-doctor --health-score
 ```
 
 ## How It Works
