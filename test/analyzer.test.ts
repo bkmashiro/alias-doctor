@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { analyzeAliases, filterHistoryByDays, suggestAliasName } from "../src/analyzer.js";
+import { analyzeAliases, filterHistoryByDays } from "../src/analyzer.js";
+import { suggestAliasName } from "../src/suggest.js";
 import type { AliasDefinition, HistoryEntry } from "../src/parser.js";
 
 test("ghost detection marks alias with zero uses as ghost", () => {
@@ -68,17 +69,17 @@ test("tracks warning and healthy aliases, sorts them, and skips blank history co
 });
 
 test("flags suggestion name conflicts and orders suggestions by count", () => {
-  const aliases: AliasDefinition[] = [{ name: "gits", command: "git status", line: 1 }];
+  const aliases: AliasDefinition[] = [{ name: "gs", command: "git status", line: 1 }];
   const history: HistoryEntry[] = [
-    ...Array.from({ length: 3 }, () => ({ command: "git stash", raw: "git stash" })),
+    ...Array.from({ length: 3 }, () => ({ command: "git show", raw: "git show" })),
     ...Array.from({ length: 5 }, () => ({ command: "npm test", raw: "npm test" }))
   ];
 
   const report = analyzeAliases(aliases, history, 3);
 
   assert.deepEqual(report.suggestions, [
-    { command: "npm test", count: 5, suggestedName: "npmt", conflicts: false },
-    { command: "git stash", count: 3, suggestedName: "gits", conflicts: true }
+    { command: "npm test", count: 5, suggestedName: "nt", conflicts: false },
+    { command: "git show", count: 3, suggestedName: "gs", conflicts: true }
   ]);
 });
 
@@ -103,9 +104,10 @@ test("filterHistoryByDays drops entries older than the cutoff but keeps undated 
   ]);
 });
 
-test("suggestAliasName handles empty, home-prefixed, path, and sanitized commands", () => {
+test("suggestAliasName uses the first alphanumeric character from each word", () => {
   assert.equal(suggestAliasName("!!!"), "cmd");
-  assert.equal(suggestAliasName("~/projects/alias-doctor"), "ali");
-  assert.equal(suggestAliasName("/usr/local/bin/node"), "nod");
-  assert.equal(suggestAliasName("docker compose up"), "dcup");
+  assert.equal(suggestAliasName("~/projects/alias-doctor"), "p");
+  assert.equal(suggestAliasName("/usr/local/bin/node"), "u");
+  assert.equal(suggestAliasName("docker compose up"), "dcu");
+  assert.equal(suggestAliasName("git checkout -b"), "gcb");
 });

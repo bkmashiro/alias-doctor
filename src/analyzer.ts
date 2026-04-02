@@ -1,16 +1,10 @@
 import type { AliasDefinition, HistoryEntry } from "./parser.js";
+import { suggestAliasName, type SuggestedAlias } from "./suggest.js";
 
 export interface AliasUsage {
   alias: AliasDefinition;
   uses: number;
   status: "ghost" | "warning" | "healthy";
-}
-
-export interface SuggestedAlias {
-  command: string;
-  count: number;
-  suggestedName: string;
-  conflicts: boolean;
 }
 
 export interface AuditReport {
@@ -71,34 +65,4 @@ export function analyzeAliases(
     healthy: aliasesWithUsage.filter((aliasUsage) => aliasUsage.status === "healthy"),
     suggestions
   };
-}
-
-export function suggestAliasName(command: string): string {
-  const segments = command
-    .split(/\s+/)
-    .map((segment) => segment.replace(/[^A-Za-z0-9/_-]/g, ""))
-    .filter(Boolean);
-
-  if (segments.length === 0) {
-    return "cmd";
-  }
-
-  const joined = segments
-    .slice(0, 3)
-    .map((segment) => {
-      if (segment.startsWith("~/")) {
-        return segment.slice(2, 5);
-      }
-
-      if (segment.includes("/")) {
-        const part = segment.split("/").filter(Boolean).at(-1) ?? segment;
-        return part.slice(0, 3);
-      }
-
-      return segment.slice(0, segment.length <= 3 ? segment.length : 1);
-    })
-    .join("")
-    .toLowerCase();
-
-  return joined || "cmd";
 }

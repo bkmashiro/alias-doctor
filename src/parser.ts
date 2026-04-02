@@ -77,6 +77,7 @@ export function parseHistoryContents(contents: string): HistoryEntry[] {
 }
 
 export type ShellType = "zsh" | "bash";
+export type ExportShellType = ShellType | "fish";
 
 export function detectShell(shellArg?: string, rcPath?: string, historyPath?: string): ShellType {
   if (shellArg === "zsh" || shellArg === "bash") {
