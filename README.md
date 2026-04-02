@@ -1,3 +1,4 @@
+[![npm](https://img.shields.io/npm/v/alias-doctor)](https://www.npmjs.com/package/alias-doctor) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 # alias-doctor
 
 `alias-doctor` audits your shell aliases. It highlights ghost aliases that are defined but not used in your recent shell history, and it suggests new aliases for commands you type repeatedly.
